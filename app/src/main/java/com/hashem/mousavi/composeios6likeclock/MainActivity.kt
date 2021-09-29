@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+val cal: Calendar = Calendar.getInstance()
 
 @Composable
 fun Clock(
@@ -54,17 +55,17 @@ fun Clock(
 ) {
 
     val initialSecondAngle by remember {
-        val cal = Calendar.getInstance()
+        cal.timeInMillis = System.currentTimeMillis()
         val second = cal.get(Calendar.SECOND)
         mutableStateOf(6f * (second - 15f))
     }
     val initialMinuteAngle by remember {
-        val cal = Calendar.getInstance()
+        cal.timeInMillis = System.currentTimeMillis()
         val minute = cal.get(Calendar.MINUTE).toFloat() + cal.get(Calendar.SECOND).toFloat() / 60f
         mutableStateOf(6f * (minute - 15f))
     }
     val initialHourAngle by remember {
-        val cal = Calendar.getInstance()
+        cal.timeInMillis = System.currentTimeMillis()
         val hour =
             cal.get(Calendar.HOUR).toFloat() + cal.get(Calendar.MINUTE).toFloat() / 60f + cal.get(
                 Calendar.SECOND
@@ -82,14 +83,6 @@ fun Clock(
         )
     )
 
-    val minuteHandRotation by infiniteTransition.animateFloat(
-        initialValue = initialMinuteAngle,
-        targetValue = (initialMinuteAngle + 360f),
-        animationSpec = infiniteRepeatable(
-            animation = tween(60 * 60 * 1000, easing = LinearEasing)
-        )
-    )
-
     val secondHandRotation by infiniteTransition.animateFloat(
         initialValue = initialSecondAngle,
         targetValue = (initialSecondAngle + 360f),
@@ -99,10 +92,23 @@ fun Clock(
     )
 
     val bigCircleAnim = animateDpAsState(
-        targetValue = if (secondHandRotation % 360 in 180.0..360.0) (-25).dp else size/2 - bigDegreesHeight - 15.dp,
+        targetValue = if (secondHandRotation % 360 in 180.0..360.0) (-25).dp else size / 2 - bigDegreesHeight - 15.dp,
         animationSpec = tween(durationMillis = 2000, easing = Easing {
             AccelerateInterpolator().getInterpolation(it)
         })
+    )
+
+    val minuteHandAnim = animateFloatAsState(
+        targetValue = if (secondHandRotation == 270f) {
+            cal.timeInMillis = System.currentTimeMillis()
+            val currMinute = cal.get(Calendar.MINUTE)
+            6f * (currMinute - 15f)
+        } else {
+            cal.timeInMillis = System.currentTimeMillis()
+            val currMinute = cal.get(Calendar.MINUTE)
+            6f * (currMinute - 15f)
+        },
+        animationSpec = tween(durationMillis = 1000)
     )
 
     Box(modifier = Modifier.size(size = size)) {
@@ -161,7 +167,7 @@ fun Clock(
                 }
 
 
-                rotate(minuteHandRotation, pivot = Offset(0f, 0f)) {
+                rotate(minuteHandAnim.value, pivot = Offset(0f, 0f)) {
 
                     drawLine(
                         color = Color.White,
